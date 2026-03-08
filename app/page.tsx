@@ -89,7 +89,7 @@ const LIVE_SIGNAL_RADIUS = 12;
 const CARAVAN_LIFETIME_MS = 30000;
 const CARAVAN_RESPAWN_MIN_MS = 18000;
 const CARAVAN_RESPAWN_MAX_MS = 42000;
-const CARAVAN_SPEED_TILES_PER_MS = 0.0072;
+const CARAVAN_SPEED_TILES_PER_MS = 0.0042;
 const MAX_CARAVANS = 3;
 const MOVE_SPEED_TILES_PER_MS = 0.0125;
 const BIOME_CELL_SIZE = 64;
@@ -408,7 +408,7 @@ export default function Home() {
     {},
   );
   const [startOpen, setStartOpen] = useState(true);
-  const [pilotName, setPilotName] = useState("majin");
+  const [pilotName, setPilotName] = useState("");
   const [stationPool, setStationPool] = useState<StationTemplate[]>(STATIONS);
   const [jumpCount, setJumpCount] = useState(0);
   const [questQueue, setQuestQueue] = useState<
@@ -509,7 +509,7 @@ export default function Home() {
   const jumpBroadcastUntilRef = useRef(0);
   const twirlUntilRef = useRef(0);
   const nextCaravanSpawnAtRef = useRef(8000);
-  const username = pilotName.trim() || "majin";
+  const username = pilotName.trim() || "anon";
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
   const hasRealtimeConfig = !!supabaseUrl && !!supabaseAnonKey;
@@ -534,11 +534,11 @@ export default function Home() {
         const ageMs = clamp(nowMs - caravan.bornAt, 0, CARAVAN_LIFETIME_MS);
         const t = ageMs / 1000;
         const baseDir = Math.atan2(caravan.vy, caravan.vx);
-        const bend = Math.sin(t * 0.36 + caravan.wobble) * 0.42;
+        const bend = Math.sin(t * 0.3 + caravan.wobble) * 0.2;
         const dir = baseDir + bend;
         const speedTilesPerSec = CARAVAN_SPEED_TILES_PER_MS * 1000;
         const travel = speedTilesPerSec * t;
-        const sway = Math.sin(t * 1.12 + caravan.wobble * 1.9) * 2.9;
+        const sway = Math.sin(t * 0.78 + caravan.wobble * 1.4) * 1.15;
         const px = -Math.sin(dir);
         const py = Math.cos(dir);
         const x = caravan.x + Math.cos(dir) * travel + px * sway;
@@ -2447,7 +2447,7 @@ export default function Home() {
           );
           const baseDir = Math.atan2(caravan.vy, caravan.vx);
           const travelDir =
-            baseDir + Math.sin(ageSec * 0.36 + caravan.wobble) * 0.42;
+            baseDir + Math.sin(ageSec * 0.3 + caravan.wobble) * 0.2;
           return (
             <g key={caravan.caravanId} opacity={alpha}>
               {Array.from({ length: 10 }).map((_, i) => {
@@ -3247,7 +3247,8 @@ export default function Home() {
           <span>rt: {realtimeDebug}</span>{" "}
         </div>{" "}
       </div>{" "}
-      `r`n{" "}
+      
+{" "}
       {questBanner && (
         <div
           className={`absolute left-1/2 top-[calc(5.9rem+20px)] z-30 -translate-x-1/2 rounded-full border border-[#79ffc7]/35 bg-[#0b1814]/92 px-3 py-1 text-center shadow-[0_8px_24px_rgba(0,0,0,0.42)] transition-all duration-500 ${questBannerVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
@@ -3292,6 +3293,7 @@ export default function Home() {
             <Input
               value={pilotName}
               onValueChange={setPilotName}
+              placeholder="anon"
               autoFocus
               variant="bordered"
               classNames={{
