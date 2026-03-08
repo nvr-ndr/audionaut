@@ -1,0 +1,366 @@
+
+> make-something@0.1.0 dev
+> next dev
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\joser\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\joser\Desktop\makesomething-codex-app-migration\makesomething-codex-app-migration\package-lock.json
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.5.0.2:3000
+
+✓ Starting...
+✓ Ready in 1068ms
+○ Compiling / ...
+ GET / 200 in 1428ms (compile: 896ms, render: 532ms)
+ GET / 200 in 112ms (compile: 11ms, render: 102ms)
+✓ Compiled in 516ms
+ GET / 200 in 493ms (compile: 185ms, render: 307ms)
+✓ Compiled in 339ms
+✓ Compiled in 315ms
+ GET / 200 in 477ms (compile: 157ms, render: 320ms)
+✓ Compiled in 283ms
+ GET / 200 in 441ms (compile: 140ms, render: 301ms)
+✓ Compiled in 278ms
+⨯ ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx:138:56
+Parsing ecmascript source code failed
+[0m [90m 136 |[39m                 setVelocity((prev) [33m=>[39m clamp(prev [33m+[39m push[33m,[39m [33m-[39m[35m2[39m[33m,[39m [35m2[39m))[33m;[39m
+ [90m 137 |[39m               }}
+[31m[1m>[22m[39m[90m 138 |[39m               className[33m=[39m[32m"relative [perspective:1700px]"[39m[32m`r`[39mn            [33m>[39m[32m`r`[39mn              [33m<[39m[33mdiv[39m className[33m=[39m[32m"pointer-events-none absolute left-6 right-6 top-1/2 h-12 -translate-y-1/2 rounded-full bg-zinc-900/45 blur-[1px]"[39m [33m/[39m[33m>[39m[32m`r`[39mn              [33m<[39m[33mmotion[39m[33m.[39mdiv
+ [90m     |[39m                                                        [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 139 |[39m                 animate[33m=[39m{{ scale[33m:[39m clickPulse [33m?[39m [35m0.99[39m [33m:[39m [35m1[39m }}
+ [90m 140 |[39m                 transition[33m=[39m{{ duration[33m:[39m [35m0.05[39m }}
+ [90m 141 |[39m                 style[33m=[39m{{ rotateZ[33m:[39m angle[33m,[39m rotateX[33m:[39m [35m82[39m[33m,[39m rotateY[33m:[39m [33m-[39m[35m4[39m }}[0m
+
+Expected '</', got 'no substitution template literal'
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component Browser]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component SSR]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+
+ GET / 500 in 1219ms (compile: 1040ms, render: 179ms)
+ GET / 200 in 257ms (compile: 160ms, render: 97ms)
+ GET / 200 in 353ms (compile: 5ms, render: 348ms)
+✓ Compiled in 307ms
+ GET / 200 in 466ms (compile: 144ms, render: 322ms)
+✓ Compiled in 404ms
+ GET / 200 in 538ms (compile: 173ms, render: 366ms)
+✓ Compiled in 396ms
+ GET / 200 in 495ms (compile: 146ms, render: 348ms)
+✓ Compiled in 335ms
+ GET / 200 in 720ms (compile: 223ms, render: 498ms)
+ GET / 200 in 206ms (compile: 5ms, render: 202ms)
+✓ Compiled in 220ms
+ GET / 200 in 697ms (compile: 179ms, render: 518ms)
+ GET / 200 in 316ms (compile: 10ms, render: 306ms)
+ GET / 200 in 912ms (compile: 151ms, render: 761ms)
+ GET / 200 in 430ms (compile: 6ms, render: 424ms)
+✓ Compiled in 255ms
+ GET / 200 in 1211ms (compile: 313ms, render: 897ms)
+✓ Compiled in 191ms
+ GET / 200 in 730ms (compile: 154ms, render: 577ms)
+✓ Compiled in 542ms
+ GET / 200 in 775ms (compile: 133ms, render: 643ms)
+ GET / 200 in 565ms (compile: 9ms, render: 556ms)
+✓ Compiled in 400ms
+ GET / 200 in 962ms (compile: 151ms, render: 811ms)
+ GET / 200 in 653ms (compile: 9ms, render: 643ms)
+✓ Compiled in 197ms
+ GET / 200 in 1054ms (compile: 224ms, render: 830ms)
+✓ Compiled in 182ms
+ GET / 200 in 775ms (compile: 133ms, render: 642ms)
+ GET / 200 in 466ms (compile: 13ms, render: 453ms)
+ GET / 200 in 497ms (compile: 10ms, render: 487ms)
+✓ Compiled in 291ms
+✓ Compiled in 167ms
+ GET / 200 in 278ms (compile: 179ms, render: 99ms)
+ GET / 200 in 710ms (compile: 5ms, render: 704ms)
+✓ Compiled in 208ms
+⨯ ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx:522:79
+Parsing ecmascript source code failed
+[0m [90m 520 |[39m   [36mconst[39m orbScaleY [33m=[39m [35m1[39m [33m-[39m moveEnergy [33m*[39m [35m0.07[39m[33m;[39m
+ [90m 521 |[39m   [36mconst[39m antennaBend [33m=[39m clamp((impulse[33m.[39mx [33m*[39m [33m-[39m[35m18[39m [33m+[39m impulse[33m.[39my [33m*[39m [35m12[39m) [33m+[39m ([33m-[39mlagX [33m+[39m lagY [33m*[39m [35m0.25[39m) [33m*[39m [35m8[39m[33m,[39m [33m-[39m[35m24[39m[33m,[39m [35m24[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 522 |[39m   [36mconst[39m blink [33m=[39m [35m0.35[39m [33m+[39m [35m0.65[39m [33m*[39m [33mMath[39m[33m.[39mpow(([33mMath[39m[33m.[39msin(nowMs [33m/[39m [35m260[39m) [33m+[39m [35m1[39m) [33m/[39m [35m2[39m[33m,[39m [35m5[39m)[33m;[39m[32m`r`[39mn  [36mconst[39m jumpProgress [33m=[39m jumpTimerRef[33m.[39mcurrent [33m>[39m [35m0[39m [33m?[39m [35m1[39m [33m-[39m jumpTimerRef[33m.[39mcurrent [33m/[39m [35m460[39m [33m:[39m [35m0[39m[33m;[39m[32m`r`[39mn  [36mconst[39m jumpLift [33m=[39m jumpTimerRef[33m.[39mcurrent [33m>[39m [35m0[39m [33m?[39m [33mMath[39m[33m.[39msin(jumpProgress [33m*[39m [33mMath[39m[33m.[39m[33mPI[39m) [33m*[39m [35m26[39m [33m:[39m [35m0[39m[33m;[39m[32m`r`[39mn  [36mconst[39m shadowScale [33m=[39m [35m1[39m [33m-[39m (jumpLift [33m/[39m [35m30[39m) [33m*[39m [35m0.45[39m[33m;[39m[32m`r`[39mn  [36mconst[39m stayPulse [33m=[39m ([33mMath[39m[33m.[39msin(nowMs [33m/[39m [35m420[39m) [33m+[39m [35m1[39m) [33m/[39m [35m2[39m[33m;[39m
+ [90m     |[39m                                                                               [31m[1m^[22m[39m
+ [90m 523 |[39m
+ [90m 524 |[39m   [36mconst[39m tiles[33m:[39m [33mArray[39m[33m<[39m{ x[33m:[39m number[33m;[39m y[33m:[39m number[33m;[39m h[33m:[39m number }[33m>[39m [33m=[39m [][33m;[39m
+ [90m 525 |[39m   [36mfor[39m ([36mlet[39m y [33m=[39m cy [33m-[39m [33mTILE_RENDER_RADIUS[39m[33m;[39m y [33m<=[39m cy [33m+[39m [33mTILE_RENDER_RADIUS[39m[33m;[39m y[33m++[39m) {[0m
+
+Expected ';', '}' or <eof>
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component Browser]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component SSR]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+
+ GET / 500 in 174ms (compile: 130ms, render: 44ms)
+ GET / 200 in 309ms (compile: 188ms, render: 121ms)
+⨯ ReferenceError: jumpTimerRef is not defined
+    at Home (app\page.tsx:523:24)
+  521 |   const antennaBend = clamp((impulse.x * -18 + impulse.y * 12) + (-lagX + lagY * 0.25) * 8, -24, 24);
+  522 |   const blink = 0.35 + 0.65 * Math.pow((Math.sin(nowMs / 260) + 1) / 2, 5);
+> 523 |   const jumpProgress = jumpTimerRef.current > 0 ? 1 - jumpTimerRef.current / 460 : 0;
+      |                        ^
+  524 |   const jumpLift = jumpTimerRef.current > 0 ? Math.sin(jumpProgress * Math.PI) * 26 : 0;
+  525 |   const shadowScale = 1 - (jumpLift / 30) * 0.45;
+  526 |   const stayPulse = (Math.sin(nowMs / 420) + 1) / 2; {
+  digest: '1869447633'
+}
+ GET / 500 in 437ms (compile: 10ms, render: 426ms)
+⨯ ReferenceError: jumpTimerRef is not defined
+    at Home (app\page.tsx:523:24)
+  521 |   const antennaBend = clamp((impulse.x * -18 + impulse.y * 12) + (-lagX + lagY * 0.25) * 8, -24, 24);
+  522 |   const blink = 0.35 + 0.65 * Math.pow((Math.sin(nowMs / 260) + 1) / 2, 5);
+> 523 |   const jumpProgress = jumpTimerRef.current > 0 ? 1 - jumpTimerRef.current / 460 : 0;
+      |                        ^
+  524 |   const jumpLift = jumpTimerRef.current > 0 ? Math.sin(jumpProgress * Math.PI) * 26 : 0;
+  525 |   const shadowScale = 1 - (jumpLift / 30) * 0.45;
+  526 |   const stayPulse = (Math.sin(nowMs / 420) + 1) / 2; {
+  digest: '1869447633'
+}
+ GET / 500 in 116ms (compile: 6ms, render: 110ms)
+✓ Compiled in 190ms
+⨯ ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx:171:37
+Parsing ecmascript source code failed
+[0m [90m 169 |[39m   [36mconst[39m moveImpulseRef [33m=[39m useRef[33m<[39m[33mVec2[39m[33m>[39m({ x[33m:[39m [35m0[39m[33m,[39m y[33m:[39m [35m0[39m })[33m;[39m
+ [90m 170 |[39m   [36mconst[39m lastMoveDirRef [33m=[39m useRef[33m<[39m[33mVec2[39m[33m>[39m({ x[33m:[39m [35m0[39m[33m,[39m y[33m:[39m [33m-[39m[35m1[39m })[33m;[39m
+[31m[1m>[22m[39m[90m 171 |[39m   [36mconst[39m jumpBoostRef [33m=[39m useRef([35m0[39m)[33m;[39m[32m`r`[39mn  [36mconst[39m jumpTimerRef [33m=[39m useRef([35m0[39m)[33m;[39m[32m`r`[39mn  [36mconst[39m lastFrameTsRef [33m=[39m useRef[33m<[39m[33mnumber[39m [33m|[39m [36mnull[39m[33m>[39m([36mnull[39m)[33m;[39m[32m`r`[39mn  [36mconst[39m sfxCtxRef [33m=[39m useRef[33m<[39m[33mAudioContext[39m [33m|[39m [36mnull[39m[33m>[39m([36mnull[39m)[33m;[39m
+ [90m     |[39m                                     [31m[1m^[22m[39m
+ [90m 172 |[39m
+ [90m 173 |[39m   [36mconst[39m stations [33m=[39m useMemo(() [33m=>[39m stationsAround(player[33m,[39m seed)[33m,[39m [player[33m,[39m seed])[33m;[39m
+ [90m 174 |[39m[0m
+
+Expected ';', '}' or <eof>
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component Browser]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component SSR]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+
+ GET / 500 in 159ms (compile: 145ms, render: 14ms)
+ GET / 200 in 776ms (compile: 145ms, render: 631ms)
+ GET / 200 in 564ms (compile: 6ms, render: 557ms)
+ GET / 200 in 625ms (compile: 8ms, render: 617ms)
+✓ Compiled in 218ms
+✓ Compiled in 261ms
+⨯ ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx:528:56
+Parsing ecmascript source code failed
+[0m [90m 526 |[39m   [36mconst[39m jumpLift [33m=[39m jumpTimerRef[33m.[39mcurrent [33m>[39m [35m0[39m [33m?[39m [33mMath[39m[33m.[39mpow([33mMath[39m[33m.[39msin(jumpProgress [33m*[39m [33mMath[39m[33m.[39m[33mPI[39m)[33m,[39m [35m0.88[39m) [33m*[39m [35m34[39m [33m:[39m [35m0[39m[33m;[39m
+ [90m 527 |[39m   [36mconst[39m shadowScale [33m=[39m [35m1[39m [33m-[39m (jumpLift [33m/[39m [35m30[39m) [33m*[39m [35m0.45[39m[33m;[39m
+[31m[1m>[22m[39m[90m 528 |[39m   [36mconst[39m stayPulse [33m=[39m ([33mMath[39m[33m.[39msin(nowMs [33m/[39m [35m420[39m) [33m+[39m [35m1[39m) [33m/[39m [35m2[39m[33m;[39m[32m`r`[39mn  [36mconst[39m eqPulse [33m=[39m [35m0.65[39m [33m+[39m (loudness [33m/[39m [35m100[39m) [33m*[39m [35m0.75[39m [33m+[39m stayPulse [33m*[39m [35m0.18[39m[33m;[39m[32m`r`[39mn  [36mconst[39m orbit [33m=[39m nowMs [33m/[39m [35m1100[39m[33m;[39m[32m`r`[39mn  [36mconst[39m orbitX [33m=[39m [33mMath[39m[33m.[39mcos(orbit) [33m*[39m [35m26[39m[33m;[39m[32m`r`[39mn  [36mconst[39m orbitY [33m=[39m [33mMath[39m[33m.[39msin(orbit) [33m*[39m [35m7[39m[33m;[39m[32m`r`[39mn  [36mconst[39m rippleProgress [33m=[39m landingRippleTimerRef[33m.[39mcurrent [33m>[39m [35m0[39m [33m?[39m [35m1[39m [33m-[39m landingRippleTimerRef[33m.[39mcurrent [33m/[39m [35m520[39m [33m:[39m [35m0[39m[33m;[39m[32m`r`[39mn  [36mconst[39m rippleRadius [33m=[39m [35m20[39m [33m+[39m rippleProgress [33m*[39m [35m44[39m[33m;[39m[32m`r`[39mn  [36mconst[39m rippleOpacity [33m=[39m landingRippleTimerRef[33m.[39mcurrent [33m>[39m [35m0[39m [33m?[39m ([35m1[39m [33m-[39m rippleProgress) [33m*[39m [35m0.75[39m [33m:[39m [35m0[39m[33m;[39m
+ [90m     |[39m                                                        [31m[1m^[22m[39m
+ [90m 529 |[39m
+ [90m 530 |[39m   [36mconst[39m tiles[33m:[39m [33mArray[39m[33m<[39m{ x[33m:[39m number[33m;[39m y[33m:[39m number[33m;[39m h[33m:[39m number }[33m>[39m [33m=[39m [][33m;[39m
+ [90m 531 |[39m   [36mfor[39m ([36mlet[39m y [33m=[39m cy [33m-[39m [33mTILE_RENDER_RADIUS[39m[33m;[39m y [33m<=[39m cy [33m+[39m [33mTILE_RENDER_RADIUS[39m[33m;[39m y[33m++[39m) {[0m
+
+Expected ';', '}' or <eof>
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component Browser]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component SSR]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+
+ GET / 500 in 227ms (compile: 189ms, render: 38ms)
+ GET / 200 in 258ms (compile: 172ms, render: 86ms)
+⨯ ReferenceError: landingRippleTimerRef is not defined
+    at Home (app\page.tsx:533:26)
+  531 |   const orbitX = Math.cos(orbit) * 26;
+  532 |   const orbitY = Math.sin(orbit) * 7;
+> 533 |   const rippleProgress = landingRippleTimerRef.current > 0 ? 1 - landingRippleTimerRef.current / 520 : 0;
+      |                          ^
+  534 |   const rippleRadius = 20 + rippleProgress * 44;
+  535 |   const rippleOpacity = landingRippleTimerRef.current > 0 ? (1 - rippleProgress) * 0.75 : 0;
+  536 | {
+  digest: '2504971494'
+}
+ GET / 500 in 298ms (compile: 6ms, render: 292ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 182ms
+⨯ ReferenceError: landingRippleTimerRef is not defined
+    at Home (app\page.tsx:538:26)
+  536 |   const orbitX = Math.cos(orbit) * 26;
+  537 |   const orbitY = Math.sin(orbit) * 7;
+> 538 |   const rippleProgress = landingRippleTimerRef.current > 0 ? 1 - landingRippleTimerRef.current / 520 : 0;
+      |                          ^
+  539 |   const rippleRadius = 20 + rippleProgress * 44;
+  540 |   const rippleOpacity = landingRippleTimerRef.current > 0 ? (1 - rippleProgress) * 0.75 : 0;
+  541 | {
+  digest: '2504971494'
+}
+ GET / 500 in 472ms (compile: 176ms, render: 295ms)
+✓ Compiled in 182ms
+ GET / 200 in 804ms (compile: 147ms, render: 657ms)
+ GET / 200 in 535ms (compile: 4ms, render: 531ms)
+ GET / 200 in 535ms (compile: 7ms, render: 527ms)
+✓ Compiled in 221ms
+✓ Compiled in 201ms
+ GET / 200 in 237ms (compile: 156ms, render: 80ms)
+ GET / 200 in 772ms (compile: 7ms, render: 765ms)
+✓ Compiled in 193ms
+ GET / 200 in 919ms (compile: 168ms, render: 751ms)
+ GET / 200 in 523ms (compile: 8ms, render: 515ms)
+✓ Compiled in 200ms
+ GET / 200 in 909ms (compile: 150ms, render: 759ms)
+ GET / 200 in 644ms (compile: 15ms, render: 629ms)
+ GET / 200 in 530ms (compile: 6ms, render: 523ms)
+✓ Compiled in 227ms
+✓ Compiled in 209ms
+⨯ ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx:41:32
+Parsing ecmascript source code failed
+[0m [90m 39 |[39m [36mconst[39m [33mELEV[39m [33m=[39m [35m12[39m[33m;[39m
+ [90m 40 |[39m [36mconst[39m [33mVISION_RADIUS[39m [33m=[39m [35m4.4[39m[33m;[39m
+[31m[1m>[22m[39m[90m 41 |[39m [36mconst[39m [33mFOG_RETURN_MS[39m [33m=[39m [35m12000[39m[33m;[39m[32m`r`[39mnconst [33mTRAIL_FALLOFF_MS[39m [33m=[39m [33mFOG_RETURN_MS[39m [33m*[39m [35m3[39m[33m;[39m
+ [90m    |[39m                                [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 42 |[39m [36mconst[39m [33mSTATION_MEMORY_MS[39m [33m=[39m [35m16000[39m[33m;[39m
+ [90m 43 |[39m [36mconst[39m [33mTILE_RENDER_RADIUS[39m [33m=[39m [35m22[39m[33m;[39m
+ [90m 44 |[39m [36mconst[39m [33mSTATION_SECTOR[39m [33m=[39m [35m16[39m[33m;[39m[0m
+
+Expected ';', '}' or <eof>
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component Browser]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component SSR]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+
+ GET / 500 in 189ms (compile: 161ms, render: 29ms)
+ GET / 200 in 282ms (compile: 167ms, render: 115ms)
+ GET / 200 in 648ms (compile: 5ms, render: 643ms)
+✓ Compiled in 182ms
+ GET / 200 in 889ms (compile: 174ms, render: 714ms)
+ GET / 200 in 588ms (compile: 8ms, render: 580ms)
+✓ Compiled in 177ms
+✓ Compiled in 187ms
+⨯ ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx:632:48
+Parsing ecmascript source code failed
+[0m [90m 630 |[39m   }[33m;[39m
+ [90m 631 |[39m
+[31m[1m>[22m[39m[90m 632 |[39m   [36mconst[39m move [33m=[39m (dx[33m:[39m number[33m,[39m dy[33m:[39m number) [33m=>[39m {[32m`r`[39mn    lastInputAtRef[33m.[39mcurrent [33m=[39m [33mDate[39m[33m.[39mnow()[33m;[39m[32m`r`[39mn    lastMoveDirRef[33m.[39mcurrent [33m=[39m { x[33m:[39m dx[33m,[39m y[33m:[39m dy }[33m;[39m
+ [90m     |[39m                                                [31m[1m^[22m[39m
+ [90m 633 |[39m     moveImpulseRef[33m.[39mcurrent [33m=[39m { x[33m:[39m dx[33m,[39m y[33m:[39m dy }[33m;[39m
+ [90m 634 |[39m     setPlayer((p) [33m=>[39m ({ x[33m:[39m p[33m.[39mx [33m+[39m dx[33m,[39m y[33m:[39m p[33m.[39my [33m+[39m dy }))[33m;[39m
+ [90m 635 |[39m   }[33m;[39m[0m
+
+Expected ';', '}' or <eof>
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component Browser]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Client Component SSR]
+    ./Desktop/makesomething-codex-app-migration/makesomething-codex-app-migration/app/page.tsx [Server Component]
+
+
+ GET / 500 in 168ms (compile: 146ms, render: 22ms)
+ GET / 200 in 251ms (compile: 171ms, render: 80ms)
+ GET / 200 in 748ms (compile: 6ms, render: 742ms)
+ GET / 200 in 584ms (compile: 10ms, render: 574ms)
+✓ Compiled in 218ms
+ GET / 200 in 225ms (compile: 159ms, render: 67ms)
+✓ Compiled in 1308ms
+✓ Compiled in 182ms
+✓ Compiled in 207ms
+✓ Compiled in 197ms
+ GET / 200 in 263ms (compile: 176ms, render: 87ms)
+✓ Compiled in 202ms
+ GET / 200 in 1024ms (compile: 185ms, render: 839ms)
+ GET / 200 in 643ms (compile: 6ms, render: 637ms)
+✓ Compiled in 218ms
+✓ Compiled in 193ms
+✓ Compiled in 210ms
+✓ Compiled in 219ms
+ GET / 200 in 231ms (compile: 159ms, render: 72ms)
+ GET / 200 in 840ms (compile: 6ms, render: 833ms)
+✓ Compiled in 187ms
+✓ Compiled in 180ms
+ GET / 200 in 231ms (compile: 160ms, render: 70ms)
+ GET / 200 in 700ms (compile: 9ms, render: 690ms)
+ GET / 200 in 616ms (compile: 7ms, render: 610ms)
+✓ Compiled in 174ms
+✓ Compiled in 242ms
+✓ Compiled in 180ms
+ GET / 200 in 288ms (compile: 205ms, render: 84ms)
+⨯ ReferenceError: comboRef is not defined
+    at Home (app\page.tsx:793:33)
+  791 |
+  792 |   const rippleProgress = landingRippleTimerRef.current > 0 ? 1 - landingRippleTimerRef.current / 520 : 0;
+> 793 |   const comboLevel = Math.floor(comboRef.current);
+      |                                 ^
+  794 |   const rippleRadius = 20 + rippleProgress * 44 + comboRef.current * 10;
+  795 |   const rippleOpacity = landingRippleTimerRef.current > 0 ? (1 - rippleProgress) * 0.75 : 0;
+  796 | {
+  digest: '1897868957'
+}
+ GET / 500 in 297ms (compile: 8ms, render: 289ms)
+✓ Compiled in 146ms
+✓ Compiled in 158ms
+⨯ ReferenceError: comboRef is not defined
+    at Home (app\page.tsx:795:33)
+  793 |
+  794 |   const rippleProgress = landingRippleTimerRef.current > 0 ? 1 - landingRippleTimerRef.current / 520 : 0;
+> 795 |   const comboLevel = Math.floor(comboRef.current);
+      |                                 ^
+  796 |   const rippleRadius = 20 + rippleProgress * 44 + comboRef.current * 10;
+  797 |   const rippleOpacity = landingRippleTimerRef.current > 0 ? (1 - rippleProgress) * 0.75 : 0;
+  798 | {
+  digest: '1175988060'
+}
+ GET / 500 in 444ms (compile: 148ms, render: 297ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 245ms
+ GET / 200 in 919ms (compile: 178ms, render: 741ms)
+✓ Compiled in 188ms
+✓ Compiled in 314ms
+✓ Compiled in 179ms
+✓ Compiled in 207ms
+ GET / 200 in 297ms (compile: 184ms, render: 113ms)
+ GET / 200 in 743ms (compile: 6ms, render: 737ms)
+✓ Compiled in 224ms
+✓ Compiled in 647ms
+✓ Compiled in 546ms
+✓ Compiled in 263ms
+✓ Compiled in 327ms
+ GET / 200 in 383ms (compile: 269ms, render: 114ms)
+ GET / 200 in 1206ms (compile: 19ms, render: 1188ms)
+ GET / 200 in 1140ms (compile: 29ms, render: 1111ms)
+✓ Compiled in 346ms
+✓ Compiled in 488ms
+✓ Compiled in 252ms
+✓ Compiled in 278ms
+ GET / 200 in 1285ms (compile: 275ms, render: 1010ms)
+✓ Compiled in 484ms
+✓ Compiled in 271ms
+✓ Compiled in 473ms
+✓ Compiled in 288ms
+ GET / 200 in 335ms (compile: 234ms, render: 100ms)
