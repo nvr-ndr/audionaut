@@ -39,15 +39,14 @@ type StationMeta = {
 type Vec2 = { x: number; y: number };
 type GhostCaravan = {
   id: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
+  p0: Vec2;
+  p1: Vec2;
+  p2: Vec2;
+  p3: Vec2;
   bornAt: number;
   despawnAt: number;
   station: StationTemplate;
   streamUrl: string;
-  wobble: number;
 };
 type RemotePlayer = {
   id: string;
@@ -89,7 +88,8 @@ const LIVE_SIGNAL_RADIUS = 12;
 const CARAVAN_LIFETIME_MS = 30000;
 const CARAVAN_RESPAWN_MIN_MS = 18000;
 const CARAVAN_RESPAWN_MAX_MS = 42000;
-const CARAVAN_SPEED_TILES_PER_MS = 0.0042;
+const CARAVAN_PATH_MIN = 16;
+const CARAVAN_PATH_MAX = 34;
 const MAX_CARAVANS = 3;
 const MOVE_SPEED_TILES_PER_MS = 0.0125;
 const BIOME_CELL_SIZE = 64;
@@ -235,6 +235,35 @@ function buildRadioGardenTemplates(payload: unknown) {
 }
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+function bezierPoint(a: Vec2, b: Vec2, c: Vec2, d: Vec2, t: number): Vec2 {
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const t2 = t * t;
+  const k0 = mt2 * mt;
+  const k1 = 3 * mt2 * t;
+  const k2 = 3 * mt * t2;
+  const k3 = t2 * t;
+  return {
+    x: a.x * k0 + b.x * k1 + c.x * k2 + d.x * k3,
+    y: a.y * k0 + b.y * k1 + c.y * k2 + d.y * k3,
+  };
+}
+function bezierTangent(a: Vec2, b: Vec2, c: Vec2, d: Vec2, t: number): Vec2 {
+  const mt = 1 - t;
+  return {
+    x:
+      3 * mt * mt * (b.x - a.x) +
+      6 * mt * t * (c.x - b.x) +
+      3 * t * t * (d.x - c.x),
+    y:
+      3 * mt * mt * (b.y - a.y) +
+      6 * mt * t * (c.y - b.y) +
+      3 * t * t * (d.y - c.y),
+  };
 }
 function key(x: number, y: number) {
   return `${x},${y}`;
@@ -531,35 +560,41 @@ export default function Home() {
   const caravanStations = useMemo(
     () =>
       caravans.map((caravan) => {
-        const ageMs = clamp(nowMs - caravan.bornAt, 0, CARAVAN_LIFETIME_MS);
-        const t = ageMs / 1000;
-        const baseDir = Math.atan2(caravan.vy, caravan.vx);
-        const bend = Math.sin(t * 0.3 + caravan.wobble) * 0.2;
-        const dir = baseDir + bend;
-        const speedTilesPerSec = CARAVAN_SPEED_TILES_PER_MS * 1000;
-        const travel = speedTilesPerSec * t;
-        const sway = Math.sin(t * 0.78 + caravan.wobble * 1.4) * 1.15;
-        const px = -Math.sin(dir);
-        const py = Math.cos(dir);
-        const x = caravan.x + Math.cos(dir) * travel + px * sway;
-        const y = caravan.y + Math.sin(dir) * travel + py * sway;
+        const progress = clamp(
+          (nowMs - caravan.bornAt) / (caravan.despawnAt - caravan.bornAt),
+          0,
+          1,
+        );
+        const eased = progress * progress * (3 - 2 * progress);
+        const pos = bezierPoint(
+          caravan.p0,
+          caravan.p1,
+          caravan.p2,
+          caravan.p3,
+          eased,
+        );
+        const tangent = bezierTangent(
+          caravan.p0,
+          caravan.p1,
+          caravan.p2,
+          caravan.p3,
+          eased,
+        );
         return {
           caravanId: caravan.id,
           bornAt: caravan.bornAt,
           despawnAt: caravan.despawnAt,
-          vx: caravan.vx,
-          vy: caravan.vy,
-          wobble: caravan.wobble,
+          heading: Math.atan2(tangent.y, tangent.x),
           station: {
             id: `ghost-caravan-${caravan.id}`,
             name: `Ghost Caravan - ${caravan.station.name}`,
             city: caravan.station.city,
             country: caravan.station.country,
             vibe: caravan.station.vibe,
-            x,
-            y,
+            x: pos.x,
+            y: pos.y,
             streamUrl: caravan.streamUrl,
-            biome: biomeAt(x, y, seed),
+            biome: biomeAt(pos.x, pos.y, seed),
           } as Station,
         };
       }),
@@ -1386,8 +1421,7 @@ export default function Home() {
         return active;
       }
       const angle = hash(seed, nowMs * 0.001, seed + 901) * Math.PI * 2;
-      const distSpawn = 18 + hash(seed + 1, nowMs * 0.0013, seed + 902) * 14;
-      const dir = hash(seed + 2, nowMs * 0.0017, seed + 903) * Math.PI * 2;
+      const startDist = 20 + hash(seed + 1, nowMs * 0.0013, seed + 902) * 18;
       const template =
         stationPool[
           Math.floor(
@@ -1398,22 +1432,40 @@ export default function Home() {
         Math.floor(
           hash(seed + 4, nowMs * 0.0023, seed + 905) * STREAM_POOL.length,
         ) % STREAM_POOL.length;
-      nextCaravanSpawnAtRef.current =
-        nowMs +
-        CARAVAN_RESPAWN_MIN_MS +
-        hash(seed + 7, nowMs * 0.0011, seed + 908) *
-          (CARAVAN_RESPAWN_MAX_MS - CARAVAN_RESPAWN_MIN_MS);
+      const p0 = {
+        x: player.x + Math.cos(angle) * startDist,
+        y: player.y + Math.sin(angle) * startDist,
+      };
+      const pathLen =
+        CARAVAN_PATH_MIN +
+        hash(seed + 2, nowMs * 0.0017, seed + 903) *
+          (CARAVAN_PATH_MAX - CARAVAN_PATH_MIN);
+      const heading =
+        angle + (hash(seed + 6, nowMs * 0.0015, seed + 907) - 0.5) * 0.9;
+      const p3 = {
+        x: p0.x + Math.cos(heading) * pathLen,
+        y: p0.y + Math.sin(heading) * pathLen,
+      };
+      const side = { x: -Math.sin(heading), y: Math.cos(heading) };
+      const curveAmp = (hash(seed + 5, nowMs * 0.0029, seed + 906) - 0.5) * 9;
+      const p1 = {
+        x: lerp(p0.x, p3.x, 0.33) + side.x * curveAmp,
+        y: lerp(p0.y, p3.y, 0.33) + side.y * curveAmp,
+      };
+      const p2 = {
+        x: lerp(p0.x, p3.x, 0.66) - side.x * curveAmp * 0.7,
+        y: lerp(p0.y, p3.y, 0.66) - side.y * curveAmp * 0.7,
+      };
       const spawned: GhostCaravan = {
-        id: "${seed}-",
-        x: player.x + Math.cos(angle) * distSpawn,
-        y: player.y + Math.sin(angle) * distSpawn,
-        vx: Math.cos(dir) * CARAVAN_SPEED_TILES_PER_MS,
-        vy: Math.sin(dir) * CARAVAN_SPEED_TILES_PER_MS,
+        id: `${seed}-${Math.floor(nowMs)}-${active.length}`,
+        p0,
+        p1,
+        p2,
+        p3,
         bornAt: nowMs,
         despawnAt: nowMs + CARAVAN_LIFETIME_MS,
         station: template,
         streamUrl: STREAM_POOL[streamIdx],
-        wobble: hash(seed + 5, nowMs * 0.0029, seed + 906) * Math.PI * 2,
       };
       return [...active, spawned];
     });
@@ -2440,14 +2492,7 @@ export default function Home() {
           const life = clamp((nowMs - caravan.bornAt) / 1400, 0, 1);
           const fadeOut = clamp((caravan.despawnAt - nowMs) / 2400, 0, 1);
           const alpha = Math.min(life, fadeOut) * vis;
-          const ageSec = clamp(
-            (nowMs - caravan.bornAt) / 1000,
-            0,
-            CARAVAN_LIFETIME_MS / 1000,
-          );
-          const baseDir = Math.atan2(caravan.vy, caravan.vx);
-          const travelDir =
-            baseDir + Math.sin(ageSec * 0.3 + caravan.wobble) * 0.2;
+          const travelDir = caravan.heading;
           return (
             <g key={caravan.caravanId} opacity={alpha}>
               {Array.from({ length: 10 }).map((_, i) => {
@@ -3247,8 +3292,6 @@ export default function Home() {
           <span>rt: {realtimeDebug}</span>{" "}
         </div>{" "}
       </div>{" "}
-      
-{" "}
       {questBanner && (
         <div
           className={`absolute left-1/2 top-[calc(5.9rem+20px)] z-30 -translate-x-1/2 rounded-full border border-[#79ffc7]/35 bg-[#0b1814]/92 px-3 py-1 text-center shadow-[0_8px_24px_rgba(0,0,0,0.42)] transition-all duration-500 ${questBannerVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
