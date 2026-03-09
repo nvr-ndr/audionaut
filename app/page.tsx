@@ -58,6 +58,7 @@ type RemotePlayer = {
   jumpX: number;
   jumpY: number;
   twirlAt: number;
+  squashAt: number;
   lastSeenAt: number;
 };
 type BiomeKey = "grove" | "dune" | "glacier" | "neon";
@@ -73,7 +74,7 @@ const STATION_MEMORY_MS = 16000;
 const TILE_RENDER_RADIUS = 22;
 const STATION_SECTOR = 22;
 const STATION_SECTOR_RADIUS = 7;
-const MIN_STATION_DISTANCE = 30;
+const MIN_STATION_DISTANCE = 42;
 const RELIC_SECTOR = 34;
 const RELIC_SECTOR_RADIUS = 6;
 const MIN_RELIC_DISTANCE = 52;
@@ -92,6 +93,7 @@ const CARAVAN_PATH_MIN = 16;
 const CARAVAN_PATH_MAX = 34;
 const MAX_CARAVANS = 3;
 const MOVE_SPEED_TILES_PER_MS = 0.0125;
+const SQUASH_MS = 700;
 const BIOME_CELL_SIZE = 64;
 const STREAM_POOL = [
   "https://kexp.streamguys1.com/kexp160.aac",
@@ -529,6 +531,8 @@ export default function Home() {
         lastJumpAt: number;
         twirlUntil: number;
         lastTwirlAt: number;
+        squashUntil: number;
+        lastSquashAt: number;
         lastMoveAt: number;
         anchorX: number;
         anchorY: number;
@@ -537,6 +541,9 @@ export default function Home() {
   >({});
   const jumpBroadcastUntilRef = useRef(0);
   const twirlUntilRef = useRef(0);
+  const squashUntilRef = useRef(0);
+  const lastSquashAtRef = useRef(0);
+  const prevTouchIdsRef = useRef<Set<string>>(new Set());
   const nextCaravanSpawnAtRef = useRef(8000);
   const username = pilotName.trim() || "anon";
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -561,7 +568,7 @@ export default function Home() {
     () =>
       caravans.map((caravan) => {
         const progress = clamp(
-          (nowMs - caravan.bornAt) / (caravan.despawnAt - caravan.bornAt),
+          (animMs - caravan.bornAt) / (caravan.despawnAt - caravan.bornAt),
           0,
           1,
         );
@@ -598,7 +605,7 @@ export default function Home() {
           } as Station,
         };
       }),
-    [caravans, nowMs, seed],
+    [caravans, animMs, seed],
   );
   const nearest = useMemo(
     () =>
@@ -607,8 +614,10 @@ export default function Home() {
         .sort((a, b) => a.d - b.d)[0],
     [stations, camPos],
   );
+  const audioFalloff = isMobile ? AUDIO_FALLOFF * 0.7 : AUDIO_FALLOFF;
+  const audioCurve = isMobile ? 2.8 : 2.2;
   const loudness = nearest
-    ? Math.round(Math.pow(clamp(1 - nearest.d / AUDIO_FALLOFF, 0, 1), 2) * 100)
+    ? Math.round(Math.pow(clamp(1 - nearest.d / audioFalloff, 0, 1), 2) * 100)
     : 0;
   const liveSignal =
     nearest && nearest.d <= LIVE_SIGNAL_RADIUS ? nearest : null;
@@ -638,7 +647,10 @@ export default function Home() {
     }
     return map;
   }, [stations, camPos, remotePlayers]);
-  const playSfx = (kind: "jump" | "touch" | "ui", stationId?: string) => {
+  const playSfx = (
+    kind: "jump" | "touch" | "ui" | "relic" | "twirl" | "squash" | "claim",
+    stationId?: string,
+  ) => {
     if (typeof window === "undefined") return;
     const Ctx =
       window.AudioContext ||
@@ -668,6 +680,50 @@ export default function Home() {
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
       osc.start(now);
       osc.stop(now + 0.2);
+      return;
+    }
+    if (kind === "squash") {
+      osc.type = "square";
+      osc.frequency.setValueAtTime(210, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+      osc.start(now);
+      osc.stop(now + 0.24);
+      return;
+    }
+    if (kind === "twirl") {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(290, now);
+      osc.frequency.exponentialRampToValueAtTime(520, now + 0.14);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.04, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.22);
+      return;
+    }
+    if (kind === "claim") {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(360, now);
+      osc.frequency.exponentialRampToValueAtTime(560, now + 0.08);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.042, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+      osc.start(now);
+      osc.stop(now + 0.18);
+      return;
+    }
+    if (kind === "relic") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(460, now);
+      osc.frequency.exponentialRampToValueAtTime(760, now + 0.16);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.22);
       return;
     }
     const seedTone = stationId
@@ -821,6 +877,7 @@ export default function Home() {
             jumpX: prev?.jumpX ?? x,
             jumpY: prev?.jumpY ?? y,
             twirlAt: prev?.twirlAt ?? 0,
+            squashAt: prev?.squashAt ?? 0,
             lastSeenAt: recvNow,
           },
         };
@@ -854,6 +911,7 @@ export default function Home() {
             jumpX: old[id]?.jumpX ?? x,
             jumpY: old[id]?.jumpY ?? y,
             twirlAt: old[id]?.twirlAt ?? 0,
+            squashAt: old[id]?.squashAt ?? 0,
             lastSeenAt: now,
           };
         }
@@ -889,6 +947,7 @@ export default function Home() {
             jumpX: px,
             jumpY: py,
             twirlAt: prev?.twirlAt ?? 0,
+            squashAt: prev?.squashAt ?? 0,
             lastSeenAt: recvNow,
           },
         };
@@ -923,6 +982,42 @@ export default function Home() {
             jumpX: prev?.jumpX ?? px,
             jumpY: prev?.jumpY ?? py,
             twirlAt: recvNow,
+            squashAt: prev?.squashAt ?? 0,
+            lastSeenAt: recvNow,
+          },
+        };
+      });
+    });
+    channel.on("broadcast", { event: "squash" }, ({ payload }) => {
+      if (!payload || typeof payload !== "object") return;
+      const data = payload as Record<string, unknown>;
+      const id = typeof data.id === "string" ? data.id : "";
+      if (!id || id === clientIdRef.current) return;
+      const recvNow = Date.now();
+      const name = typeof data.name === "string" ? data.name : "unknown";
+      const x = typeof data.x === "number" ? data.x : NaN;
+      const y = typeof data.y === "number" ? data.y : NaN;
+      const color =
+        typeof data.color === "string"
+          ? data.color
+          : colorForPlayer(id || name);
+      setRemotePlayers((old) => {
+        const prev = old[id];
+        const px = Number.isFinite(x) ? x : (prev?.x ?? 0);
+        const py = Number.isFinite(y) ? y : (prev?.y ?? 0);
+        return {
+          ...old,
+          [id]: {
+            id,
+            name: prev?.name ?? name,
+            x: px,
+            y: py,
+            color: prev?.color ?? color,
+            jumpAt: prev?.jumpAt ?? 0,
+            jumpX: prev?.jumpX ?? px,
+            jumpY: prev?.jumpY ?? py,
+            twirlAt: prev?.twirlAt ?? 0,
+            squashAt: recvNow,
             lastSeenAt: recvNow,
           },
         };
@@ -1059,6 +1154,7 @@ export default function Home() {
     setCamPos({ x: 0, y: 0 });
     playerRef.current = { x: 0, y: 0 };
     touchingRef.current = new Set();
+    prevTouchIdsRef.current = new Set();
     moveImpulseRef.current = { x: 0, y: 0 };
     jumpBoostRef.current = 0;
     jumpTimerRef.current = 0;
@@ -1247,6 +1343,25 @@ export default function Home() {
     });
   }, [player]);
   useEffect(() => {
+    const current = new Set(currentTouchIds);
+    const exited = [...prevTouchIdsRef.current].filter(
+      (id) => !current.has(id),
+    );
+    prevTouchIdsRef.current = current;
+    if (exited.length === 0) return;
+    setStationMeta((old) => {
+      const next = { ...old };
+      let changed = false;
+      for (const id of exited) {
+        const prev = next[id];
+        if (!prev || prev.totalStayMs === 0) continue;
+        next[id] = { ...prev, totalStayMs: 0 };
+        changed = true;
+      }
+      return changed ? next : old;
+    });
+  }, [touchIdsKey, currentTouchIds]);
+  useEffect(() => {
     if (currentTouchIds.length === 0) return;
     setStationMeta((old) => {
       const next = { ...old };
@@ -1382,6 +1497,7 @@ export default function Home() {
           ?.send({ type: "broadcast", event: "claim", payload: c })
           .catch(() => {});
       }
+      if (claimBroadcasts.some((c) => c.by === username)) playSfx("claim");
     }
   }, [nowMs, stations, camPos, remotePlayers, username]);
   useEffect(() => {
@@ -1406,7 +1522,7 @@ export default function Home() {
         at: now,
       })),
     ]);
-    playSfx("touch");
+    playSfx("relic");
   }, [camPos, relics, relicPickedAt]);
   useEffect(() => {
     setRelicBursts((old) => old.filter((b) => nowMs - b.at < 1200));
@@ -1560,6 +1676,12 @@ export default function Home() {
         triggerTwirl();
         return;
       }
+      if (k === "n") {
+        event.preventDefault();
+        lastInputAtRef.current = Date.now();
+        triggerSquash();
+        return;
+      }
       if (
         ![
           "arrowup",
@@ -1604,6 +1726,11 @@ export default function Home() {
     const onTouchStart = (event: TouchEvent) => {
       if (startOpenRef.current) return;
       event.preventDefault();
+      if (event.touches.length === 3) {
+        lastInputAtRef.current = Date.now();
+        triggerSquash();
+        return;
+      }
       if (event.touches.length === 2) {
         lastInputAtRef.current = Date.now();
         triggerTwirl();
@@ -1731,7 +1858,8 @@ export default function Home() {
           audioGainRef.current.set(station.id, gain);
         } catch {}
       }
-      const target = Math.pow(clamp(1 - d / AUDIO_FALLOFF, 0, 1), 2.2) * 0.95;
+      const target =
+        Math.pow(clamp(1 - d / audioFalloff, 0, 1), audioCurve) * 0.95;
       const gainNode = audioGainRef.current.get(station.id);
       if (gainNode && mixCtx) {
         const now = mixCtx.currentTime;
@@ -1892,8 +2020,32 @@ export default function Home() {
         },
       })
       .catch(() => {});
-    playSfx("ui");
+    playSfx("twirl");
     vibrate(10);
+  };
+  const triggerSquash = () => {
+    if (startOpenRef.current) return;
+    const now = Date.now();
+    if (squashUntilRef.current > now) return;
+    if (now - lastSquashAtRef.current < 260) return;
+    lastSquashAtRef.current = now;
+    squashUntilRef.current = now + SQUASH_MS;
+    realtimeChannelRef.current
+      ?.send({
+        type: "broadcast",
+        event: "squash",
+        payload: {
+          id: clientIdRef.current,
+          name: username,
+          color: playerColor,
+          x: playerRef.current.x,
+          y: playerRef.current.y,
+          ts: now,
+        },
+      })
+      .catch(() => {});
+    playSfx("squash");
+    vibrate([6, 30, 10]);
   };
   const move = (dx: number, dy: number) => {
     if (startOpenRef.current) return;
@@ -1994,6 +2146,20 @@ export default function Home() {
   const twirlAntennaY =
     -16 * (1 - twirlEase) + twirlAntennaEquatorY * twirlEase;
   const twirlOrbRotation = twirlProgress * 540;
+  const squashProgress =
+    squashUntilRef.current > animMs
+      ? clamp(1 - (squashUntilRef.current - animMs) / SQUASH_MS, 0, 1)
+      : 0;
+  const squashPress =
+    squashProgress > 0 ? Math.pow(Math.sin(squashProgress * Math.PI), 1.2) : 0;
+  const squashRebound =
+    squashProgress > 0.45
+      ? Math.sin(((squashProgress - 0.45) / 0.55) * Math.PI)
+      : 0;
+  const squashScaleX = 1 + squashPress * 0.24 - squashRebound * 0.06;
+  const squashScaleY = 1 - squashPress * 0.3 + squashRebound * 0.14;
+  const squashYOffset = squashPress * 7 - squashRebound * 3;
+  const squashAntennaDrop = squashPress * 9 - squashRebound * 3;
   const localNameOpacity = clamp((idleMs - 1600) / 900, 0, 1);
   const localOwnerHere = stations.some(
     (s) =>
@@ -2051,6 +2217,9 @@ export default function Home() {
       hash(tile.x * 31, tile.y * 37, seed + 1501) > 0.94
     );
   });
+  const geyserTiles = decorTiles.filter(
+    (tile) => hash(tile.x * 41, tile.y * 43, seed + 2101) > 0.994,
+  );
   const fireflies = Array.from({ length: fireflyCount }, (_, i) => {
     const span = 26;
     const fx = cx - span / 2 + hash(i * 7, 19, seed + 300) * span;
@@ -2364,6 +2533,61 @@ export default function Home() {
             </g>
           );
         })}{" "}
+        {geyserTiles.map((tile) => {
+          const h = heightAt(tile.x, tile.y, seed);
+          const p = iso(tile.x, tile.y, h);
+          const x = p.sx - cam.sx;
+          const y = p.sy - cam.sy + 10;
+          const vis = tileFogVisibility(tile.x, tile.y);
+          if (vis < 0.08) return null;
+          const cycleLen = 6200;
+          const offset = hash(tile.x * 7, tile.y * 11, seed + 2102) * cycleLen;
+          const cycle = ((animMs + offset) % cycleLen) / cycleLen;
+          const active = cycle < 0.28;
+          const spray = active ? Math.sin((cycle / 0.28) * Math.PI) : 0;
+          const plumeHeight = 12 + spray * 34;
+          return (
+            <g key={`geyser-${tile.x}-${tile.y}`} opacity={0.16 + vis * 0.56}>
+              <ellipse cx={x} cy={y + 11} rx={18} ry={6.3} fill="#6fc4ff1f" />
+              <ellipse
+                cx={x}
+                cy={y + 10}
+                rx={10 + spray * 2.8}
+                ry={3.8 + spray * 1.1}
+                fill="none"
+                stroke="#8ee6ff66"
+                strokeWidth="2"
+              />
+              <circle
+                cx={x}
+                cy={y + 7}
+                r={2.2 + spray * 1.8}
+                fill="#aff3ff"
+                opacity={0.55 + spray * 0.25}
+              />
+              {active &&
+                Array.from({ length: 14 }).map((_, i) => {
+                  const t = (i / 14 + cycle / 0.28) % 1;
+                  const drift =
+                    (hash(tile.x * (i + 3), tile.y * (i + 5), seed + 2200 + i) -
+                      0.5) *
+                    18;
+                  const px = x + drift * (0.35 + t * 0.7);
+                  const py = y + 6 - t * plumeHeight;
+                  return (
+                    <circle
+                      key={`geyser-p-${tile.x}-${tile.y}-${i}`}
+                      cx={px}
+                      cy={py}
+                      r={1.4 - t * 0.8}
+                      fill="#bdf6ff"
+                      opacity={0.58 - t * 0.4}
+                    />
+                  );
+                })}
+            </g>
+          );
+        })}{" "}
         {fireflies.map((f, i) => {
           const p = iso(f.fx, f.fy, 0);
           const x = p.sx - cam.sx;
@@ -2489,8 +2713,8 @@ export default function Home() {
             Math.round(caravan.station.y),
           );
           if (vis < 0.08) return null;
-          const life = clamp((nowMs - caravan.bornAt) / 1400, 0, 1);
-          const fadeOut = clamp((caravan.despawnAt - nowMs) / 2400, 0, 1);
+          const life = clamp((animMs - caravan.bornAt) / 1400, 0, 1);
+          const fadeOut = clamp((caravan.despawnAt - animMs) / 2400, 0, 1);
           const alpha = Math.min(life, fadeOut) * vis;
           const travelDir = caravan.heading;
           return (
@@ -2566,7 +2790,7 @@ export default function Home() {
               : "#0b1118";
           const isActivated = (meta?.visitedCount ?? 0) > 0;
           const localSignal = clamp(
-            1 - distance(camPos, s) / AUDIO_FALLOFF,
+            1 - distance(camPos, s) / audioFalloff,
             0,
             1,
           );
@@ -2741,6 +2965,8 @@ export default function Home() {
             lastJumpAt: 0,
             twirlUntil: 0,
             lastTwirlAt: 0,
+            squashUntil: 0,
+            lastSquashAt: 0,
             lastMoveAt: animMs,
             anchorX: rp.x,
             anchorY: rp.y,
@@ -2748,6 +2974,7 @@ export default function Home() {
           const drift = Math.hypot(rp.x - rrPrev.lastX, rp.y - rrPrev.lastY);
           const isNewJump = (rp.jumpAt || 0) > rrPrev.lastJumpAt + 20;
           const isNewTwirl = (rp.twirlAt || 0) > rrPrev.lastTwirlAt + 20;
+          const isNewSquash = (rp.squashAt || 0) > rrPrev.lastSquashAt + 20;
           const jumpUntil = isNewJump
             ? animMs + 760
             : rrPrev.jumpUntil > animMs
@@ -2757,6 +2984,11 @@ export default function Home() {
             ? animMs + 900
             : rrPrev.twirlUntil > animMs
               ? rrPrev.twirlUntil
+              : 0;
+          const squashUntil = isNewSquash
+            ? animMs + SQUASH_MS
+            : rrPrev.squashUntil > animMs
+              ? rrPrev.squashUntil
               : 0;
           const rx = rrPrev.x + (rp.x - rrPrev.x) * 0.22;
           const ry = rrPrev.y + (rp.y - rrPrev.y) * 0.22;
@@ -2774,6 +3006,8 @@ export default function Home() {
             lastJumpAt: Math.max(rrPrev.lastJumpAt, rp.jumpAt || 0),
             twirlUntil,
             lastTwirlAt: Math.max(rrPrev.lastTwirlAt, rp.twirlAt || 0),
+            squashUntil,
+            lastSquashAt: Math.max(rrPrev.lastSquashAt, rp.squashAt || 0),
             lastMoveAt,
             anchorX,
             anchorY,
@@ -2810,6 +3044,26 @@ export default function Home() {
             -13 * (1 - remoteTwirlEase) +
             remoteTwirlAntennaEquatorY * remoteTwirlEase;
           const remoteTwirlOrbRotation = remoteTwirlProgress * 540;
+          const remoteSquashProgress =
+            squashUntil > animMs
+              ? clamp(1 - (squashUntil - animMs) / SQUASH_MS, 0, 1)
+              : 0;
+          const remoteSquashPress =
+            remoteSquashProgress > 0
+              ? Math.pow(Math.sin(remoteSquashProgress * Math.PI), 1.2)
+              : 0;
+          const remoteSquashRebound =
+            remoteSquashProgress > 0.45
+              ? Math.sin(((remoteSquashProgress - 0.45) / 0.55) * Math.PI)
+              : 0;
+          const remoteSquashScaleX =
+            1 + remoteSquashPress * 0.24 - remoteSquashRebound * 0.06;
+          const remoteSquashScaleY =
+            1 - remoteSquashPress * 0.3 + remoteSquashRebound * 0.14;
+          const remoteSquashYOffset =
+            remoteSquashPress * 7 - remoteSquashRebound * 3;
+          const remoteSquashAntennaDrop =
+            remoteSquashPress * 9 - remoteSquashRebound * 3;
           const localNearest =
             stations
               .map((s) => distance({ x: renderX, y: renderY }, s))
@@ -2856,11 +3110,11 @@ export default function Home() {
                 >{`${remoteOwnerHere ? "\u{1F451} " : ""}${rp.name}`}</text>
               )}{" "}
               <g
-                transform={`translate(${(remoteTwirlOffsetX * 0.22).toFixed(2)} ${(-hop).toFixed(2)}) rotate(${remoteTwirlOrbRotation.toFixed(2)} ${x.toFixed(2)} ${(y - 6).toFixed(2)}) scale(${remoteTwirlScaleX.toFixed(3)} 1)`}
+                transform={`translate(${(remoteTwirlOffsetX * 0.22).toFixed(2)} ${(-hop + remoteSquashYOffset).toFixed(2)}) rotate(${remoteTwirlOrbRotation.toFixed(2)} ${x.toFixed(2)} ${(y - 6).toFixed(2)}) scale(${(remoteTwirlScaleX * remoteSquashScaleX).toFixed(3)} ${remoteSquashScaleY.toFixed(3)})`}
               >
                 {" "}
                 <path
-                  d={`M ${x + remoteTwirlAntennaX} ${y + remoteTwirlAntennaY} Q ${x - 1.5 + antenna + remoteTwirlAntennaBend * 0.2} ${y - 24} ${x + antenna * 0.6 + remoteTwirlAntennaBend * 0.28} ${y - 34}`}
+                  d={`M ${x + remoteTwirlAntennaX} ${y + remoteTwirlAntennaY + remoteSquashAntennaDrop} Q ${x - 1.5 + antenna + remoteTwirlAntennaBend * 0.2} ${y - 24 + remoteSquashAntennaDrop} ${x + antenna * 0.6 + remoteTwirlAntennaBend * 0.28} ${y - 34 + remoteSquashAntennaDrop}`}
                   fill="none"
                   stroke="#dffcff"
                   strokeWidth="1.6"
@@ -2868,7 +3122,7 @@ export default function Home() {
                 />{" "}
                 <circle
                   cx={x + remoteTwirlAntennaX + antenna * 0.6}
-                  cy={y + remoteTwirlAntennaY - 23}
+                  cy={y + remoteTwirlAntennaY + remoteSquashAntennaDrop - 23}
                   r={1.7 + pulse * 0.9}
                   fill={rp.color}
                   opacity={0.78}
@@ -2916,7 +3170,7 @@ export default function Home() {
           )}{" "}
         </g>{" "}
         <g
-          transform={`translate(0 ${(-jumpLift + idleBob).toFixed(2)}) rotate(${twirlOrbRotation.toFixed(2)} 0 -8) scale(${(orbScaleX * twirlScaleX).toFixed(3)} ${orbScaleY.toFixed(3)})`}
+          transform={`translate(0 ${(-jumpLift + idleBob + squashYOffset).toFixed(2)}) rotate(${twirlOrbRotation.toFixed(2)} 0 -8) scale(${(orbScaleX * twirlScaleX * squashScaleX).toFixed(3)} ${(orbScaleY * squashScaleY).toFixed(3)})`}
         >
           {" "}
           {localNameOpacity > 0.02 && (
@@ -2950,7 +3204,7 @@ export default function Home() {
             </g>
           )}{" "}
           <g
-            transform={`translate(${twirlAntennaX.toFixed(2)} ${twirlAntennaY.toFixed(2)}) rotate(${(antennaBend + twirlAntennaBend).toFixed(2)})`}
+            transform={`translate(${twirlAntennaX.toFixed(2)} ${(twirlAntennaY + squashAntennaDrop).toFixed(2)}) rotate(${(antennaBend + twirlAntennaBend).toFixed(2)})`}
           >
             {" "}
             <path
