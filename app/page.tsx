@@ -78,6 +78,9 @@ const MIN_STATION_DISTANCE = 42;
 const RELIC_SECTOR = 34;
 const RELIC_SECTOR_RADIUS = 6;
 const MIN_RELIC_DISTANCE = 52;
+const GEYSER_SECTOR = 40;
+const GEYSER_SECTOR_RADIUS = 6;
+const MIN_GEYSER_DISTANCE = MIN_RELIC_DISTANCE;
 const RELIC_PICKUP_RADIUS = 1.35;
 const TOUCH_RADIUS = 0.92;
 const INTERACT_RADIUS = 2.45;
@@ -427,6 +430,59 @@ function relicsAround(player: Vec2, seed: number) {
   }
   return accepted;
 }
+function geysersAround(player: Vec2, seed: number) {
+  const sx0 = floorDiv(player.x, GEYSER_SECTOR);
+  const sy0 = floorDiv(player.y, GEYSER_SECTOR);
+  const candidates: Array<{
+    id: string;
+    x: number;
+    y: number;
+    phase: number;
+    power: number;
+  }> = [];
+  for (
+    let sy = sy0 - GEYSER_SECTOR_RADIUS;
+    sy <= sy0 + GEYSER_SECTOR_RADIUS;
+    sy++
+  ) {
+    for (
+      let sx = sx0 - GEYSER_SECTOR_RADIUS;
+      sx <= sx0 + GEYSER_SECTOR_RADIUS;
+      sx++
+    ) {
+      const spawnRoll = hash(sx * 19 + 7, sy * 23 - 5, seed + 2601);
+      if (spawnRoll < 0.67) continue;
+      const ox =
+        5 +
+        Math.floor(hash(sx + 51, sy - 27, seed + 2602) * (GEYSER_SECTOR - 10));
+      const oy =
+        5 +
+        Math.floor(hash(sx - 47, sy + 31, seed + 2603) * (GEYSER_SECTOR - 10));
+      const x = sx * GEYSER_SECTOR + ox;
+      const y = sy * GEYSER_SECTOR + oy;
+      candidates.push({
+        id: `geyser:${seed}:${sx}:${sy}`,
+        x,
+        y,
+        phase: hash(sx * 29, sy * 31, seed + 2604),
+        power: 0.8 + hash(sx * 37, sy * 41, seed + 2605) * 0.6,
+      });
+    }
+  }
+  const accepted: Array<{
+    id: string;
+    x: number;
+    y: number;
+    phase: number;
+    power: number;
+  }> = [];
+  for (const g of candidates) {
+    if (accepted.every((a) => distance(a, g) >= MIN_GEYSER_DISTANCE)) {
+      accepted.push(g);
+    }
+  }
+  return accepted;
+}
 export default function Home() {
   const [seed, setSeed] = useState(7423);
   const [player, setPlayer] = useState<Vec2>({ x: 0, y: 0 });
@@ -564,6 +620,7 @@ export default function Home() {
     [player, seed, stationPool],
   );
   const relics = useMemo(() => relicsAround(player, seed), [player, seed]);
+  const geysers = useMemo(() => geysersAround(player, seed), [player, seed]);
   const caravanStations = useMemo(
     () =>
       caravans.map((caravan) => {
@@ -2217,9 +2274,6 @@ export default function Home() {
       hash(tile.x * 31, tile.y * 37, seed + 1501) > 0.94
     );
   });
-  const geyserTiles = decorTiles.filter(
-    (tile) => hash(tile.x * 41, tile.y * 43, seed + 2101) > 0.994,
-  );
   const fireflies = Array.from({ length: fireflyCount }, (_, i) => {
     const span = 26;
     const fx = cx - span / 2 + hash(i * 7, 19, seed + 300) * span;
@@ -2533,55 +2587,67 @@ export default function Home() {
             </g>
           );
         })}{" "}
-        {geyserTiles.map((tile) => {
-          const h = heightAt(tile.x, tile.y, seed);
-          const p = iso(tile.x, tile.y, h);
+        {geysers.map((g) => {
+          const h = heightAt(g.x, g.y, seed);
+          const p = iso(g.x, g.y, h);
           const x = p.sx - cam.sx;
           const y = p.sy - cam.sy + 10;
-          const vis = tileFogVisibility(tile.x, tile.y);
+          const vis = tileFogVisibility(g.x, g.y);
           if (vis < 0.08) return null;
-          const cycleLen = 6200;
-          const offset = hash(tile.x * 7, tile.y * 11, seed + 2102) * cycleLen;
+          const cycleLen = 5800;
+          const offset = g.phase * cycleLen;
           const cycle = ((animMs + offset) % cycleLen) / cycleLen;
-          const active = cycle < 0.28;
-          const spray = active ? Math.sin((cycle / 0.28) * Math.PI) : 0;
-          const plumeHeight = 12 + spray * 34;
+          const active = cycle < 0.32;
+          const spray = active ? Math.sin((cycle / 0.32) * Math.PI) : 0;
+          const plumeHeight = (24 + spray * 62) * g.power;
+          const glow = 0.4 + spray * 0.55;
           return (
-            <g key={`geyser-${tile.x}-${tile.y}`} opacity={0.16 + vis * 0.56}>
-              <ellipse cx={x} cy={y + 11} rx={18} ry={6.3} fill="#6fc4ff1f" />
+            <g key={g.id} opacity={0.3 + vis * 0.7}>
+              <ellipse cx={x} cy={y + 11} rx={30} ry={10} fill="#8cf0ff33" />
               <ellipse
                 cx={x}
-                cy={y + 10}
-                rx={10 + spray * 2.8}
-                ry={3.8 + spray * 1.1}
+                cy={y + 10.5}
+                rx={18 + spray * 3.8}
+                ry={6 + spray * 1.6}
                 fill="none"
-                stroke="#8ee6ff66"
-                strokeWidth="2"
+                stroke="#7bf4ffcc"
+                strokeWidth="2.6"
               />
-              <circle
+              <ellipse
                 cx={x}
                 cy={y + 7}
-                r={2.2 + spray * 1.8}
-                fill="#aff3ff"
-                opacity={0.55 + spray * 0.25}
+                rx={4.8 + spray * 1.9}
+                ry={2 + spray * 0.9}
+                fill="#d4fbff"
+                opacity={0.58 + spray * 0.26}
+              />
+              <line
+                x1={x}
+                y1={y + 7}
+                x2={x}
+                y2={y + 7 - plumeHeight}
+                stroke="#baf8ff"
+                strokeWidth={2.4 + spray * 1.1}
+                strokeLinecap="round"
+                opacity={glow}
               />
               {active &&
-                Array.from({ length: 14 }).map((_, i) => {
-                  const t = (i / 14 + cycle / 0.28) % 1;
+                Array.from({ length: 16 }).map((_, i) => {
+                  const t = (i / 16 + cycle / 0.32) % 1;
                   const drift =
-                    (hash(tile.x * (i + 3), tile.y * (i + 5), seed + 2200 + i) -
+                    (hash(g.x * (i + 3), g.y * (i + 5), seed + 2200 + i) -
                       0.5) *
-                    18;
-                  const px = x + drift * (0.35 + t * 0.7);
-                  const py = y + 6 - t * plumeHeight;
+                    9;
+                  const px = x + drift * (0.22 + t * 0.3);
+                  const py = y + 6 - t * plumeHeight * (0.96 + g.power * 0.2);
                   return (
                     <circle
-                      key={`geyser-p-${tile.x}-${tile.y}-${i}`}
+                      key={`geyser-p-${g.id}-${i}`}
                       cx={px}
                       cy={py}
-                      r={1.4 - t * 0.8}
-                      fill="#bdf6ff"
-                      opacity={0.58 - t * 0.4}
+                      r={1.8 - t * 0.95}
+                      fill="#d7fbff"
+                      opacity={0.72 - t * 0.45}
                     />
                   );
                 })}
@@ -3064,10 +3130,11 @@ export default function Home() {
             remoteSquashPress * 7 - remoteSquashRebound * 3;
           const remoteSquashAntennaDrop =
             remoteSquashPress * 9 - remoteSquashRebound * 3;
-          const localNearest =
-            stations
-              .map((s) => distance({ x: renderX, y: renderY }, s))
-              .sort((a, b) => a - b)[0] ?? 99;
+          let localNearest = 99;
+          for (const s of stations) {
+            const d = distance({ x: renderX, y: renderY }, s);
+            if (d < localNearest) localNearest = d;
+          }
           const nearStationBoost = clamp(1 - localNearest / 6, 0, 1);
           const remoteJumpProgress =
             jumpUntil > animMs
