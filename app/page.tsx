@@ -97,6 +97,8 @@ const CARAVAN_PATH_MAX = 34;
 const MAX_CARAVANS = 3;
 const MOVE_SPEED_TILES_PER_MS = 0.0125;
 const SQUASH_MS = 700;
+const STATION_BLOOM_TIME_MS = 60000;
+const STATION_BLOOM_MAX_RADIUS = 86;
 const BIOME_CELL_SIZE = 64;
 const STREAM_POOL = [
   "https://kexp.streamguys1.com/kexp160.aac",
@@ -704,6 +706,29 @@ export default function Home() {
     }
     return map;
   }, [stations, camPos, remotePlayers]);
+  const stationBloom = useMemo(() => {
+    const out: Record<
+      string,
+      { level: number; radius: number; crowdBoost: number }
+    > = {};
+    for (const s of stations) {
+      const meta = stationMeta[s.id];
+      if (!meta || (meta.visitedCount ?? 0) <= 0) continue;
+      const crowdCount = stationCrowd[s.id]?.count ?? 1;
+      const crowdBoost = 1 + Math.max(0, crowdCount - 1) * 0.62;
+      const level = clamp(
+        (meta.totalStayMs * crowdBoost) / STATION_BLOOM_TIME_MS,
+        0,
+        1,
+      );
+      out[s.id] = {
+        level,
+        radius: 18 + level * STATION_BLOOM_MAX_RADIUS,
+        crowdBoost,
+      };
+    }
+    return out;
+  }, [stations, stationMeta, stationCrowd]);
   const playSfx = (
     kind: "jump" | "touch" | "ui" | "relic" | "twirl" | "squash" | "claim",
     stationId?: string,
@@ -2814,6 +2839,128 @@ export default function Home() {
                 stroke="#f3b3ff66"
                 strokeWidth="2.2"
               />
+            </g>
+          );
+        })}{" "}
+        {stations.map((s) => {
+          const bloom = stationBloom[s.id];
+          if (!bloom || bloom.level < 0.03) return null;
+          const h = heightAt(s.x, s.y, seed);
+          const p = iso(s.x, s.y, h);
+          const x = p.sx - cam.sx;
+          const y = p.sy - cam.sy + 8;
+          const vis = tileFogVisibility(s.x, s.y);
+          if (vis < 0.08) return null;
+          const growth = bloom.level;
+          const bloomRadius = bloom.radius;
+          const sproutCount = Math.floor(8 + growth * 26);
+          const rainbowCount = Math.floor(3 + growth * 8);
+          const pulse =
+            (Math.sin(animMs / 420 + s.x * 0.21 + s.y * 0.13) + 1) * 0.5;
+          return (
+            <g
+              key={`station-bloom-${s.id}`}
+              opacity={(0.2 + growth * 0.7) * vis}
+            >
+              <ellipse
+                cx={x}
+                cy={y + 13}
+                rx={16 + bloomRadius * 0.9}
+                ry={6 + bloomRadius * 0.33}
+                fill="#86ffbe22"
+              />
+              <ellipse
+                cx={x}
+                cy={y + 13}
+                rx={10 + bloomRadius * 0.54 + pulse * 2.4}
+                ry={4 + bloomRadius * 0.2 + pulse * 0.8}
+                fill="none"
+                stroke="#a8ffd0aa"
+                strokeWidth="1.6"
+                opacity={0.45 + growth * 0.35}
+              />
+              {Array.from({ length: sproutCount }).map((_, i) => {
+                const a =
+                  hash(s.x * (i + 3), s.y * (i + 7), seed + 8800 + i) *
+                  Math.PI *
+                  2;
+                const dSeed = hash(
+                  s.x * (i + 11),
+                  s.y * (i + 5),
+                  seed + 9100 + i,
+                );
+                const dist = (0.12 + dSeed * 0.88) * bloomRadius;
+                const emerge = dist / Math.max(1, bloomRadius);
+                if (growth < emerge) return null;
+                const px = x + Math.cos(a) * dist;
+                const py = y + 12 + Math.sin(a) * dist * 0.42;
+                const stem =
+                  1.6 +
+                  hash(s.x * (i + 13), s.y * (i + 17), seed + 9300 + i) *
+                    (2.6 + growth * 5.2);
+                const hue =
+                  98 +
+                  hash(s.x * (i + 19), s.y * (i + 23), seed + 9500 + i) * 54;
+                return (
+                  <g key={`sprout-${s.id}-${i}`}>
+                    <line
+                      x1={px}
+                      y1={py}
+                      x2={px}
+                      y2={py - stem}
+                      stroke="#8cffb8"
+                      strokeWidth={0.8 + growth * 0.6}
+                      strokeLinecap="round"
+                      opacity={0.52 + growth * 0.34}
+                    />
+                    <circle
+                      cx={px}
+                      cy={py - stem}
+                      r={0.9 + growth * 0.8}
+                      fill={`hsl(${hue} 92% 72%)`}
+                      opacity={0.62 + growth * 0.32}
+                    />
+                  </g>
+                );
+              })}
+              {Array.from({ length: rainbowCount }).map((_, i) => {
+                const phase =
+                  animMs / (640 + i * 55) + i * 0.72 + s.x * 0.06 + s.y * 0.04;
+                const baseR = 7 + growth * (14 + i * 1.6);
+                const ax = x + Math.cos(phase) * baseR;
+                const ay = y - 10 + Math.sin(phase * 1.2) * (3 + growth * 6);
+                return (
+                  <g key={`rainbowfly-${s.id}-${i}`}>
+                    {Array.from({ length: isMobile ? 3 : 5 }).map((_, ti) => {
+                      const tPhase = phase - ti * 0.12;
+                      const tx = x + Math.cos(tPhase) * baseR;
+                      const ty =
+                        y -
+                        10 +
+                        Math.sin(tPhase * 1.2) * (3 + growth * 6) +
+                        ti * 0.3;
+                      const hue = (i * 38 + ti * 22 + animMs / 18) % 360;
+                      return (
+                        <circle
+                          key={`trail-${s.id}-${i}-${ti}`}
+                          cx={tx}
+                          cy={ty}
+                          r={1.4 - ti * 0.22}
+                          fill={`hsl(${hue} 92% 72%)`}
+                          opacity={0.5 - ti * 0.09}
+                        />
+                      );
+                    })}
+                    <circle
+                      cx={ax}
+                      cy={ay}
+                      r={1.5 + growth * 0.65}
+                      fill={`hsl(${(i * 44 + animMs / 10) % 360} 96% 72%)`}
+                      opacity={0.78}
+                    />
+                  </g>
+                );
+              })}
             </g>
           );
         })}{" "}
