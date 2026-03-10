@@ -2866,6 +2866,7 @@ export default function Home() {
         })}{" "}
         {stations.map((s) => {
           const bloom = stationBloom[s.id];
+          const bloomMeta = stationMeta[s.id];
           const growth = bloomVisual[s.id] ?? bloom?.level ?? 0;
           if (!bloom || growth < 0.02) return null;
           const h = heightAt(s.x, s.y, seed);
@@ -2874,7 +2875,10 @@ export default function Home() {
           const y = p.sy - cam.sy + 8;
           const vis = tileFogVisibility(s.x, s.y);
           if (vis < 0.08) return null;
-          const bloomRadius = 18 + growth * STATION_BLOOM_MAX_RADIUS;
+          const bloomRadius = STATION_BLOOM_MAX_RADIUS;
+          const activationSeed =
+            (bloomMeta?.lastVisitedAt ?? bloomMeta?.claimedAt ?? 0) * 0.0001 +
+            seed;
           const patchCount = Math.floor(3 + growth * 7);
           const rainbowCount = Math.floor(3 + growth * 8);
           return (
@@ -2884,18 +2888,26 @@ export default function Home() {
             >
               {Array.from({ length: patchCount }).map((_, pi) => {
                 const pAngle =
-                  hash(s.x * (pi + 5), s.y * (pi + 11), seed + 9800 + pi) *
+                  hash(
+                    s.x * (pi + 5),
+                    s.y * (pi + 11),
+                    activationSeed + 9800 + pi,
+                  ) *
                   Math.PI *
                   2;
                 const pDistSeed = hash(
                   s.x * (pi + 13),
                   s.y * (pi + 17),
-                  seed + 9900 + pi,
+                  activationSeed + 9900 + pi,
                 );
                 const pDist = (0.14 + pDistSeed * 0.82) * bloomRadius;
                 const pSpawnAt =
                   0.24 +
-                  hash(s.x * (pi + 29), s.y * (pi + 31), seed + 9910 + pi) *
+                  hash(
+                    s.x * (pi + 29),
+                    s.y * (pi + 31),
+                    activationSeed + 9910 + pi,
+                  ) *
                     0.68;
                 const pLocalGrowth = clamp(
                   (growth - pSpawnAt) / (1 - pSpawnAt),
@@ -2905,9 +2917,15 @@ export default function Home() {
                 if (pLocalGrowth <= 0.01) return null;
                 const px = x + Math.cos(pAngle) * pDist;
                 const py = y + 12 + Math.sin(pAngle) * pDist * 0.42;
-                const patchPulse =
-                  (Math.sin(animMs / 450 + pi * 0.9 + s.x * 0.2) + 1) * 0.5;
-                const patchR = 2.4 + pLocalGrowth * 11 + patchPulse * 1.8;
+                const patchBaseR =
+                  6 +
+                  hash(
+                    s.x * (pi + 33),
+                    s.y * (pi + 35),
+                    activationSeed + 10050 + pi,
+                  ) *
+                    7;
+                const patchR = patchBaseR * (0.28 + pLocalGrowth * 0.72);
                 const patchSprouts = Math.floor(2 + pLocalGrowth * 6);
                 return (
                   <g key={`patch-${s.id}-${pi}`}>
@@ -2930,29 +2948,37 @@ export default function Home() {
                     />
                     {Array.from({ length: patchSprouts }).map((_, si) => {
                       const a =
-                        hash(px * (si + 3), py * (si + 7), seed + 10100 + si) *
+                        hash(
+                          s.x * (si + 3) + pi * 11,
+                          s.y * (si + 7) - pi * 5,
+                          activationSeed + 10100 + si,
+                        ) *
                         Math.PI *
                         2;
                       const d =
-                        hash(px * (si + 11), py * (si + 5), seed + 10200 + si) *
-                        patchR *
+                        hash(
+                          s.x * (si + 11) + pi * 13,
+                          s.y * (si + 5) - pi * 3,
+                          activationSeed + 10200 + si,
+                        ) *
+                        patchBaseR *
                         0.86;
                       const sx = px + Math.cos(a) * d;
                       const sy = py + Math.sin(a) * d * 0.42;
                       const stem =
                         0.9 +
                         hash(
-                          px * (si + 13),
-                          py * (si + 17),
-                          seed + 10300 + si,
+                          s.x * (si + 13) + pi * 17,
+                          s.y * (si + 17) - pi * 7,
+                          activationSeed + 10300 + si,
                         ) *
                           (1.2 + pLocalGrowth * 3.2);
                       const hue =
                         96 +
                         hash(
-                          px * (si + 19),
-                          py * (si + 23),
-                          seed + 10400 + si,
+                          s.x * (si + 19) + pi * 19,
+                          s.y * (si + 23) - pi * 9,
+                          activationSeed + 10400 + si,
                         ) *
                           64;
                       return (
@@ -2983,7 +3009,12 @@ export default function Home() {
               {Array.from({ length: rainbowCount }).map((_, i) => {
                 const fSpawnAt =
                   0.32 +
-                  hash(s.x * (i + 37), s.y * (i + 41), seed + 10600 + i) * 0.62;
+                  hash(
+                    s.x * (i + 37),
+                    s.y * (i + 41),
+                    activationSeed + 10600 + i,
+                  ) *
+                    0.62;
                 const fGrowth = clamp(
                   (growth - fSpawnAt) / (1 - fSpawnAt),
                   0,
@@ -2991,12 +3022,20 @@ export default function Home() {
                 );
                 if (fGrowth <= 0.01) return null;
                 const baseAngle =
-                  hash(s.x * (i + 43), s.y * (i + 47), seed + 10700 + i) *
+                  hash(
+                    s.x * (i + 43),
+                    s.y * (i + 47),
+                    activationSeed + 10700 + i,
+                  ) *
                   Math.PI *
                   2;
                 const baseDist =
                   (0.12 +
-                    hash(s.x * (i + 53), s.y * (i + 59), seed + 10800 + i) *
+                    hash(
+                      s.x * (i + 53),
+                      s.y * (i + 59),
+                      activationSeed + 10800 + i,
+                    ) *
                       0.88) *
                   bloomRadius;
                 const baseX = x + Math.cos(baseAngle) * baseDist;
