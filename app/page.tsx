@@ -602,6 +602,8 @@ export default function Home() {
   const squashUntilRef = useRef(0);
   const lastSquashAtRef = useRef(0);
   const prevTouchIdsRef = useRef<Set<string>>(new Set());
+  const bloomVisualRef = useRef<Record<string, number>>({});
+  const bloomVisualLastMsRef = useRef(0);
   const nextCaravanSpawnAtRef = useRef(8000);
   const username = pilotName.trim() || "anon";
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -729,6 +731,26 @@ export default function Home() {
     }
     return out;
   }, [stations, stationMeta, stationCrowd]);
+  const bloomVisual = useMemo(() => {
+    const prev = bloomVisualRef.current;
+    const next: Record<string, number> = { ...prev };
+    const last = bloomVisualLastMsRef.current || animMs;
+    const dt = clamp(animMs - last, 0, 64);
+    bloomVisualLastMsRef.current = animMs;
+    const rise = 1 - Math.exp(-dt / 900);
+    const fall = 1 - Math.exp(-dt / 1700);
+    const ids = new Set([...Object.keys(next), ...Object.keys(stationBloom)]);
+    for (const id of ids) {
+      const target = stationBloom[id]?.level ?? 0;
+      const current = next[id] ?? 0;
+      const rate = target > current ? rise : fall;
+      const v = current + (target - current) * rate;
+      if (target === 0 && v < 0.002) delete next[id];
+      else next[id] = v;
+    }
+    bloomVisualRef.current = next;
+    return next;
+  }, [stationBloom, animMs]);
   const playSfx = (
     kind: "jump" | "touch" | "ui" | "relic" | "twirl" | "squash" | "claim",
     stationId?: string,
@@ -2844,15 +2866,15 @@ export default function Home() {
         })}{" "}
         {stations.map((s) => {
           const bloom = stationBloom[s.id];
-          if (!bloom || bloom.level < 0.03) return null;
+          const growth = bloomVisual[s.id] ?? bloom?.level ?? 0;
+          if (!bloom || growth < 0.02) return null;
           const h = heightAt(s.x, s.y, seed);
           const p = iso(s.x, s.y, h);
           const x = p.sx - cam.sx;
           const y = p.sy - cam.sy + 8;
           const vis = tileFogVisibility(s.x, s.y);
           if (vis < 0.08) return null;
-          const growth = bloom.level;
-          const bloomRadius = bloom.radius;
+          const bloomRadius = 18 + growth * STATION_BLOOM_MAX_RADIUS;
           const patchCount = Math.floor(3 + growth * 7);
           const rainbowCount = Math.floor(3 + growth * 8);
           return (
@@ -2871,14 +2893,22 @@ export default function Home() {
                   seed + 9900 + pi,
                 );
                 const pDist = (0.14 + pDistSeed * 0.82) * bloomRadius;
-                const pEmerge = pDist / Math.max(1, bloomRadius);
-                if (growth < pEmerge * 0.95) return null;
+                const pSpawnAt =
+                  0.24 +
+                  hash(s.x * (pi + 29), s.y * (pi + 31), seed + 9910 + pi) *
+                    0.68;
+                const pLocalGrowth = clamp(
+                  (growth - pSpawnAt) / (1 - pSpawnAt),
+                  0,
+                  1,
+                );
+                if (pLocalGrowth <= 0.01) return null;
                 const px = x + Math.cos(pAngle) * pDist;
                 const py = y + 12 + Math.sin(pAngle) * pDist * 0.42;
                 const patchPulse =
                   (Math.sin(animMs / 450 + pi * 0.9 + s.x * 0.2) + 1) * 0.5;
-                const patchR = 6 + growth * 16 + patchPulse * 3;
-                const patchSprouts = Math.floor(4 + growth * 8);
+                const patchR = 2.4 + pLocalGrowth * 11 + patchPulse * 1.8;
+                const patchSprouts = Math.floor(2 + pLocalGrowth * 6);
                 return (
                   <g key={`patch-${s.id}-${pi}`}>
                     <ellipse
@@ -2886,17 +2916,17 @@ export default function Home() {
                       cy={py}
                       rx={patchR}
                       ry={patchR * 0.34}
-                      fill="#94ffc82e"
+                      fill="#94ffc820"
                     />
                     <ellipse
                       cx={px}
                       cy={py}
-                      rx={patchR * 0.65}
-                      ry={patchR * 0.22}
+                      rx={patchR * 0.6}
+                      ry={patchR * 0.2}
                       fill="none"
                       stroke="#b8ffd8b4"
-                      strokeWidth="1.2"
-                      opacity={0.42 + growth * 0.3}
+                      strokeWidth="1"
+                      opacity={0.26 + pLocalGrowth * 0.3}
                     />
                     {Array.from({ length: patchSprouts }).map((_, si) => {
                       const a =
@@ -2910,13 +2940,13 @@ export default function Home() {
                       const sx = px + Math.cos(a) * d;
                       const sy = py + Math.sin(a) * d * 0.42;
                       const stem =
-                        1.5 +
+                        0.9 +
                         hash(
                           px * (si + 13),
                           py * (si + 17),
                           seed + 10300 + si,
                         ) *
-                          (2.2 + growth * 5.4);
+                          (1.2 + pLocalGrowth * 3.2);
                       const hue =
                         96 +
                         hash(
@@ -2933,16 +2963,16 @@ export default function Home() {
                             x2={sx}
                             y2={sy - stem}
                             stroke="#8cffb8"
-                            strokeWidth={0.78 + growth * 0.56}
+                            strokeWidth={0.62 + pLocalGrowth * 0.34}
                             strokeLinecap="round"
-                            opacity={0.52 + growth * 0.34}
+                            opacity={0.34 + pLocalGrowth * 0.26}
                           />
                           <circle
                             cx={sx}
                             cy={sy - stem}
-                            r={0.85 + growth * 0.86}
+                            r={0.62 + pLocalGrowth * 0.52}
                             fill={`hsl(${hue} 92% 72%)`}
-                            opacity={0.62 + growth * 0.32}
+                            opacity={0.44 + pLocalGrowth * 0.24}
                           />
                         </g>
                       );
@@ -2951,39 +2981,56 @@ export default function Home() {
                 );
               })}
               {Array.from({ length: rainbowCount }).map((_, i) => {
+                const fSpawnAt =
+                  0.32 +
+                  hash(s.x * (i + 37), s.y * (i + 41), seed + 10600 + i) * 0.62;
+                const fGrowth = clamp(
+                  (growth - fSpawnAt) / (1 - fSpawnAt),
+                  0,
+                  1,
+                );
+                if (fGrowth <= 0.01) return null;
+                const baseAngle =
+                  hash(s.x * (i + 43), s.y * (i + 47), seed + 10700 + i) *
+                  Math.PI *
+                  2;
+                const baseDist =
+                  (0.12 +
+                    hash(s.x * (i + 53), s.y * (i + 59), seed + 10800 + i) *
+                      0.88) *
+                  bloomRadius;
+                const baseX = x + Math.cos(baseAngle) * baseDist;
+                const baseY = y - 8 + Math.sin(baseAngle) * baseDist * 0.42;
                 const phase =
-                  animMs / (620 + i * 50) + i * 0.72 + s.x * 0.06 + s.y * 0.04;
-                const orbitR = 9 + growth * (22 + i * 2.2);
-                const ax = x + Math.cos(phase) * orbitR;
-                const ay = y - 10 + Math.sin(phase * 1.24) * (4 + growth * 8);
+                  animMs / (690 + i * 65) + i * 0.83 + s.x * 0.03 + s.y * 0.05;
+                const flutterX = Math.cos(phase * 1.2) * (0.9 + fGrowth * 2);
+                const flutterY = Math.sin(phase * 1.4) * (0.7 + fGrowth * 1.6);
+                const ax = baseX + flutterX;
+                const ay = baseY + flutterY;
                 return (
                   <g key={`rainbowfly-${s.id}-${i}`}>
                     {Array.from({ length: isMobile ? 3 : 5 }).map((_, ti) => {
-                      const tPhase = phase - ti * 0.12;
-                      const tx = x + Math.cos(tPhase) * orbitR;
-                      const ty =
-                        y -
-                        10 +
-                        Math.sin(tPhase * 1.24) * (4 + growth * 8) +
-                        ti * 0.3;
+                      const trailT = ti / (isMobile ? 3 : 5);
+                      const tx = ax - flutterX * trailT * 0.9;
+                      const ty = ay - flutterY * trailT * 0.9 + ti * 0.18;
                       const hue = (i * 38 + ti * 22 + animMs / 18) % 360;
                       return (
                         <circle
                           key={`trail-${s.id}-${i}-${ti}`}
                           cx={tx}
                           cy={ty}
-                          r={1.4 - ti * 0.22}
+                          r={1.1 - ti * 0.18}
                           fill={`hsl(${hue} 92% 72%)`}
-                          opacity={0.52 - ti * 0.09}
+                          opacity={0.38 - ti * 0.08}
                         />
                       );
                     })}
                     <circle
                       cx={ax}
                       cy={ay}
-                      r={1.5 + growth * 0.7}
+                      r={1.15 + fGrowth * 0.6}
                       fill={`hsl(${(i * 44 + animMs / 10) % 360} 96% 72%)`}
-                      opacity={0.8}
+                      opacity={0.66}
                     />
                   </g>
                 );
