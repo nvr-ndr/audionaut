@@ -2879,52 +2879,191 @@ export default function Home() {
           const activationSeed =
             (bloomMeta?.lastVisitedAt ?? bloomMeta?.claimedAt ?? 0) * 0.0001 +
             seed;
-          const patchCount = Math.floor(3 + growth * 7);
-          const rainbowCount = Math.floor(3 + growth * 8);
+          const patchCount = Math.max(1, Math.floor((3 + growth * 7) * 3));
+          const rainbowCount = Math.max(1, Math.floor((3 + growth * 8) * 3));
+          const patchDefs: {
+            ox: number;
+            oy: number;
+            baseR: number;
+            spawnAt: number;
+          }[] = [];
+          for (let pi = 0; pi < patchCount; pi += 1) {
+            const sizeMul =
+              1 +
+              hash(
+                s.x * (pi + 7),
+                s.y * (pi + 13),
+                activationSeed + 10030 + pi,
+              ) *
+                1.5;
+            const patchBaseR =
+              (6 +
+                hash(
+                  s.x * (pi + 33),
+                  s.y * (pi + 35),
+                  activationSeed + 10050 + pi,
+                ) *
+                  7) *
+              sizeMul;
+            const spawnAt = clamp(
+              0.05 +
+                (pi / Math.max(1, patchCount - 1)) * 0.9 +
+                (hash(
+                  s.x * (pi + 41),
+                  s.y * (pi + 43),
+                  activationSeed + 10080 + pi,
+                ) -
+                  0.5) *
+                  0.08,
+              0.04,
+              0.985,
+            );
+            let chosenOx = 0;
+            let chosenOy = 0;
+            let placed = false;
+            for (let attempt = 0; attempt < 38; attempt += 1) {
+              const pAngle =
+                hash(
+                  s.x * (pi + 5 + attempt * 11),
+                  s.y * (pi + 11 + attempt * 7),
+                  activationSeed + 9800 + pi * 31 + attempt * 17,
+                ) *
+                Math.PI *
+                2;
+              const pDistSeed = hash(
+                s.x * (pi + 13 + attempt * 5),
+                s.y * (pi + 17 + attempt * 3),
+                activationSeed + 9900 + pi * 29 + attempt * 13,
+              );
+              const pDist = (0.12 + pDistSeed * 0.84) * bloomRadius;
+              const candidateOx = Math.cos(pAngle) * pDist;
+              const candidateOy = Math.sin(pAngle) * pDist * 0.42;
+              const hasOverlap = patchDefs.some((other) => {
+                const dx = candidateOx - other.ox;
+                const dy = candidateOy - other.oy;
+                const minGap = (patchBaseR + other.baseR) * 0.95 + 4.5;
+                return dx * dx + dy * dy < minGap * minGap;
+              });
+              if (!hasOverlap) {
+                chosenOx = candidateOx;
+                chosenOy = candidateOy;
+                placed = true;
+                break;
+              }
+            }
+            if (!placed) {
+              const fallbackAngle =
+                hash(
+                  s.x * (pi + 61),
+                  s.y * (pi + 67),
+                  activationSeed + 10110 + pi,
+                ) *
+                Math.PI *
+                2;
+              const fallbackDist =
+                (0.2 + (pi / Math.max(1, patchCount)) * 0.68) * bloomRadius;
+              chosenOx = Math.cos(fallbackAngle) * fallbackDist;
+              chosenOy = Math.sin(fallbackAngle) * fallbackDist * 0.42;
+            }
+            patchDefs.push({
+              ox: chosenOx,
+              oy: chosenOy,
+              baseR: patchBaseR,
+              spawnAt,
+            });
+          }
+          const flyDefs: {
+            ox: number;
+            oy: number;
+            spawnAt: number;
+          }[] = [];
+          for (let i = 0; i < rainbowCount; i += 1) {
+            const spawnAt = clamp(
+              0.1 +
+                (i / Math.max(1, rainbowCount - 1)) * 0.84 +
+                (hash(
+                  s.x * (i + 73),
+                  s.y * (i + 79),
+                  activationSeed + 10650 + i,
+                ) -
+                  0.5) *
+                  0.09,
+              0.06,
+              0.99,
+            );
+            let chosenOx = 0;
+            let chosenOy = 0;
+            let placed = false;
+            for (let attempt = 0; attempt < 34; attempt += 1) {
+              const baseAngle =
+                hash(
+                  s.x * (i + 43 + attempt * 11),
+                  s.y * (i + 47 + attempt * 7),
+                  activationSeed + 10700 + i * 37 + attempt * 19,
+                ) *
+                Math.PI *
+                2;
+              const baseDist =
+                (0.1 +
+                  hash(
+                    s.x * (i + 53 + attempt * 5),
+                    s.y * (i + 59 + attempt * 3),
+                    activationSeed + 10800 + i * 29 + attempt * 11,
+                  ) *
+                    0.9) *
+                bloomRadius;
+              const candidateOx = Math.cos(baseAngle) * baseDist;
+              const candidateOy = Math.sin(baseAngle) * baseDist * 0.42;
+              const overlapsFly = flyDefs.some((other) => {
+                const dx = candidateOx - other.ox;
+                const dy = candidateOy - other.oy;
+                return dx * dx + dy * dy < 6.2 * 6.2;
+              });
+              if (overlapsFly) continue;
+              const overlapsPatch = patchDefs.some((patch) => {
+                const dx = candidateOx - patch.ox;
+                const dy = candidateOy - patch.oy;
+                const minGap = patch.baseR * 0.62 + 3.4;
+                return dx * dx + dy * dy < minGap * minGap;
+              });
+              if (!overlapsPatch) {
+                chosenOx = candidateOx;
+                chosenOy = candidateOy;
+                placed = true;
+                break;
+              }
+            }
+            if (!placed) {
+              const fallbackAngle =
+                hash(
+                  s.x * (i + 83),
+                  s.y * (i + 89),
+                  activationSeed + 10890 + i,
+                ) *
+                Math.PI *
+                2;
+              const fallbackDist =
+                (0.18 + (i / Math.max(1, rainbowCount)) * 0.74) * bloomRadius;
+              chosenOx = Math.cos(fallbackAngle) * fallbackDist;
+              chosenOy = Math.sin(fallbackAngle) * fallbackDist * 0.42;
+            }
+            flyDefs.push({ ox: chosenOx, oy: chosenOy, spawnAt });
+          }
           return (
             <g
               key={`station-bloom-${s.id}`}
               opacity={(0.24 + growth * 0.74) * vis}
             >
-              {Array.from({ length: patchCount }).map((_, pi) => {
-                const pAngle =
-                  hash(
-                    s.x * (pi + 5),
-                    s.y * (pi + 11),
-                    activationSeed + 9800 + pi,
-                  ) *
-                  Math.PI *
-                  2;
-                const pDistSeed = hash(
-                  s.x * (pi + 13),
-                  s.y * (pi + 17),
-                  activationSeed + 9900 + pi,
-                );
-                const pDist = (0.14 + pDistSeed * 0.82) * bloomRadius;
-                const pSpawnAt =
-                  0.24 +
-                  hash(
-                    s.x * (pi + 29),
-                    s.y * (pi + 31),
-                    activationSeed + 9910 + pi,
-                  ) *
-                    0.68;
+              {patchDefs.map((patch, pi) => {
                 const pLocalGrowth = clamp(
-                  (growth - pSpawnAt) / (1 - pSpawnAt),
+                  (growth - patch.spawnAt) / (1 - patch.spawnAt),
                   0,
                   1,
                 );
                 if (pLocalGrowth <= 0.01) return null;
-                const px = x + Math.cos(pAngle) * pDist;
-                const py = y + 12 + Math.sin(pAngle) * pDist * 0.42;
-                const patchBaseR =
-                  6 +
-                  hash(
-                    s.x * (pi + 33),
-                    s.y * (pi + 35),
-                    activationSeed + 10050 + pi,
-                  ) *
-                    7;
+                const px = x + patch.ox;
+                const py = y + 12 + patch.oy;
+                const patchBaseR = patch.baseR;
                 const patchR = patchBaseR * (0.28 + pLocalGrowth * 0.72);
                 const patchSprouts = Math.floor(2 + pLocalGrowth * 6);
                 return (
@@ -3006,40 +3145,15 @@ export default function Home() {
                   </g>
                 );
               })}
-              {Array.from({ length: rainbowCount }).map((_, i) => {
-                const fSpawnAt =
-                  0.32 +
-                  hash(
-                    s.x * (i + 37),
-                    s.y * (i + 41),
-                    activationSeed + 10600 + i,
-                  ) *
-                    0.62;
+              {flyDefs.map((fly, i) => {
                 const fGrowth = clamp(
-                  (growth - fSpawnAt) / (1 - fSpawnAt),
+                  (growth - fly.spawnAt) / (1 - fly.spawnAt),
                   0,
                   1,
                 );
                 if (fGrowth <= 0.01) return null;
-                const baseAngle =
-                  hash(
-                    s.x * (i + 43),
-                    s.y * (i + 47),
-                    activationSeed + 10700 + i,
-                  ) *
-                  Math.PI *
-                  2;
-                const baseDist =
-                  (0.12 +
-                    hash(
-                      s.x * (i + 53),
-                      s.y * (i + 59),
-                      activationSeed + 10800 + i,
-                    ) *
-                      0.88) *
-                  bloomRadius;
-                const baseX = x + Math.cos(baseAngle) * baseDist;
-                const baseY = y - 8 + Math.sin(baseAngle) * baseDist * 0.42;
+                const baseX = x + fly.ox;
+                const baseY = y - 8 + fly.oy;
                 const phase =
                   animMs / (690 + i * 65) + i * 0.83 + s.x * 0.03 + s.y * 0.05;
                 const flutterX = Math.cos(phase * 1.2) * (0.9 + fGrowth * 2);
@@ -3945,3 +4059,4 @@ export default function Home() {
     </main>
   );
 }
+
